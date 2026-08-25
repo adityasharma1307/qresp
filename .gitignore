@@ -1,0 +1,115 @@
+# Python auto-generated files
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Test / tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Secrets. Never commit an HF token.
+.env
+*.token
+
+# Sampling frames. ~108 MiB of model ids each, over GitHub's 100 MiB hard
+# limit, and regenerable: scripts/sample_longtail.py rebuilds the frame, and
+# the committed manifest carries its SHA-256, so excluding it costs nothing
+# that can be verified. See data/DATASETS.md.
+data/longtail_frame_*.txt
+data/longtail_frame_*.txt.partial
+data/longtail_frame_*.txt.cursor
+
+# Run logs
+logs/
+
+# Responsible-disclosure material. Full identifiers and the redacted account
+# list stay on the author's machine only — never commit either. (The redacted
+# file's value was aggregation of 147 account names, which is enough to recover
+# public token-shaped repo names. See security/INCIDENT-2026-07-25-*.md.)
+security/*.PRIVATE.txt
+security/*.private.*
+security/leaked_token_repos.redacted.json
+
+# OS junk files
+Thumbs.db
+.DS_Store
+
+# Pre-backfill snapshots written by scripts/audit/rescan_silent_rows.py.
+# Git already preserves the previous state of any tracked file, so committing a
+# copy alongside it is redundant -- and because these datasets contain
+# repository names shaped like credentials, a fresh full-file blob would drag
+# them through GitHub's secret scanning again for nothing. Recover the original
+# with:
+#     git show <commit>:data/longtail_10k_2026-07-25.jsonl
+data/*.prebackfill-*.jsonl
+
+# Scratch produced by running notebooks/qknot_demo.ipynb. The notebook is the
+# deliverable; everything it writes is a per-run artefact -- tampered copies,
+# a synthetic attacker tree, a stand-in HF snapshot, and the bundle/keys the
+# CLI section emits. Committing them would ship a signed bundle whose keys were
+# generated on one machine at one moment, which is meaningless to a reader and
+# invites the assumption that it is a reference vector.
+executed_demo.ipynb
+**/hf-stand-in/
+**/synthetic-model/
+**/tampered/
+**/ci-artefact/
+**/openai-inc--privacy-filter/
+notebooks/cli.bundle.json
+notebooks/cli.keys.json
+
+# The demo notebook's Colab fallback clones the repository. If that path runs
+# from inside a checkout -- which it should not, but did once when the local
+# search failed -- it leaves a nested clone here. Never commit one.
+/qknot/
+/qknot2/
+
+# Local packaging / history-rewrite scratch that must never be committed.
+# - qknot-0.1.0/   extracted sdist from release/qknot-0.1.0.tar.gz
+# - qknot.git/     bare mirror left by git-filter-repo / --mirror clones
+# - trust/         output of `qknot trust-material` (re-fetchable anytime)
+/qknot-0.1.0/
+/qknot.git/
+/trust/
+
+# Long-term signing key material derived by scripts/release/derive_keypair.py
+# (or anything else) for registering a release identity. This is exactly the
+# kind of secret that must never end up in git history -- see
+# release/README.md, "Completing the cycle". release/*.bundle.json and
+# release/*.keys.json (PUBLIC keys only) are fine and are meant to be
+# committed; only the raw secret material is excluded here.
+release/keys/
+*.key
+!tests/**/*.key
+
+# Primary sources behind docs/CITATIONS.md, kept locally rather than committed.
+# 33 MB of PDFs makes every commit slow over a mounted filesystem, and a
+# citation record does not need the bytes -- it needs stable identifiers.
+# Superseded by references.bib with DOIs, which makes these redundant.
+docs/sources/
+
+# npm collection payloads only. These are large and EXACTLY re-derivable --
+# the frame is 4.29M names from a pinned all-the-package-names version, the
+# candidate pool from a recorded seed set, the ranking from the candidates.
+# The .manifest.json files beside them ARE the reproducibility record and stay
+# tracked. The HuggingFace and entropy datasets remain tracked as before: they
+# are small, and unlike these they cannot be regenerated on demand.
+data/npm_frame_*.txt
+data/npm_candidates.txt
+data/npm_ranking_*.json
+data/npm_*.jsonl
+data/npm_ranking_*.partial.json

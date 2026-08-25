@@ -1,0 +1,145 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qknot"
+version = "0.1.1"
+description = "Hybrid post-quantum signing and identity registration for software supply chains, backed by a cross-registry audit"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "[Author, redacted for review]", email = "redacted-for-review@example.invalid"}
+]
+keywords = ["post-quantum", "cryptography", "software-supply-chain", "code-signing",
+            "sigstore", "provenance"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security :: Cryptography",
+    "Topic :: Software Development :: Build Tools",
+    "Typing :: Typed",
+]
+dependencies = [
+    "huggingface_hub>=0.24",
+    "requests>=2.31",
+    "tenacity>=8.2",       # retries with exponential backoff
+    "typer>=0.12",         # CLI
+    "rich>=13.7",          # pretty terminal output
+    "pydantic>=2.5",       # record schema validation
+    # Signing primitives. These were previously absent, so `pip install qknot`
+    # produced a package whose signing half raised ImportError on first use --
+    # including the `qknot sign` and `qknot verify` commands.
+    "cryptography>=42.0",  # Ed25519 via constant-time OpenSSL
+    "dilithium-py>=1.1",   # ML-DSA (FIPS 204). Offline signing only:
+                           # pure Python, not constant-time. See
+                           # docs/THREAT-MODEL.md and signing/backends.py.
+]
+
+[project.optional-dependencies]
+# RFC 3161 timestamping. Optional because signing works without it: what you
+# lose is the ability to establish an UPPER bound on signing time, and so the
+# ability to rescue a signature whose algorithm was later disallowed. Kept out
+# of the core dependencies for the same reason the audit extras are -- `qknot
+# sign` must not require anything it does not use.
+transparency = [
+    "rfc3161-client>=0.1",   # same implementation sigstore-python verifies with
+]
+# OIDC identity-token acquisition for `qknot register`, and the TUF client
+# behind `qknot trust-material`. Not needed if you pass --identity-token
+# yourself and fetch a trusted_root.json some other way -- `sign`/`verify`
+# (without --registration) need none of this.
+register = [
+    "sigstore>=3.0",
+]
+analysis = [
+    "pandas>=2.2",
+    "matplotlib>=3.9",
+    "jupyterlab>=4.0",
+]
+dev = [
+    "pytest>=8.0",
+    "jsonschema>=4.0",   # validates our bundles against the real OMS schemas
+    "pytest-cov>=5.0",
+    "ruff>=0.5",
+    "mypy>=1.10",
+    # Executing the Task 7 demo notebook. Needed by
+    # scripts/demo/build_notebook.py --run, not by the notebook itself:
+    # a reader opening it in Colab or Jupyter needs none of these.
+    "nbclient>=0.10",
+    "nbformat>=5.10",
+    "ipykernel>=6.29",
+]
+
+[project.urls]
+Homepage = "https://github.com/[anonymized-for-review]/qknot"
+Repository = "https://github.com/[anonymized-for-review]/qknot"
+Documentation = "https://github.com/[anonymized-for-review]/qknot#readme"
+Issues = "https://github.com/[anonymized-for-review]/qknot/issues"
+Changelog = "https://github.com/[anonymized-for-review]/qknot/blob/main/docs/RELEASE-NOTES-v0.1.1.md"
+# DOI withheld for anonymous review; see Open Science Appendix
+
+[project.scripts]
+qknot = "qknot.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM"]
+ignore = [
+    "E501",
+    # typer.Option() in a default is the documented Typer idiom;
+    # the "singleton variable" workaround would obscure the CLI.
+    "B008",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# jsonschema warns that the OMS $schema draft is unresolvable offline.
+# Vendoring the schemas is deliberate; the warning is not actionable.
+filterwarnings = ["ignore:The metaschema specified by .schema:DeprecationWarning"]
+pythonpath = ["src"]
+python_files = ["test_*.py"]
+addopts = "-v --strict-markers"
+markers = [
+    # tests/conftest.py closes the network for every test by default. Anything
+    # that genuinely needs a socket declares it here, so the dependency is
+    # visible in the source rather than implicit in whether CI has connectivity.
+    "allow_network: test genuinely requires network access",
+    "allow_sleeping: test genuinely needs real time.sleep",
+]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+ignore_missing_imports = true
+
+# `strict = true` above was declared but had never passed -- 69 errors, so the
+# claim was decorative. `qknot.signing` now genuinely satisfies it, which is the
+# half that matters: it is the reusable package, the one someone else might
+# depend on, and the one where a wrong type is a correctness question rather
+# than a formatting one.
+#
+# `qknot.audit` and `qknot.cli` are checked but not strictly. They are research
+# code against an untyped HTTP API and a CLI framework that leans on runtime
+# introspection, where full annotation buys little. Relaxing them explicitly is
+# honest; leaving a global claim that fails is not.
+[[tool.mypy.overrides]]
+module = ["qknot.audit.*", "qknot.cli"]
+disallow_untyped_defs = false
+disallow_untyped_calls = false
+disallow_any_generics = false
+warn_return_any = false
